@@ -137,7 +137,8 @@ def generate_polygon(prop, mask, juncs, pid, test_inria):
 
 def get_poly_crowdai(prop, mask_pred, junctions):
     prop_mask = np.zeros_like(mask_pred).astype(np.uint8)
-    prop_mask[prop.coords[:, 0], prop.coords[:, 1]] = 1
+    coords = prop.coords
+    prop_mask[coords[:, 0].astype(int), coords[:, 1].astype(int)] = 1
     masked_instance = np.ma.masked_array(mask_pred, mask=(prop_mask != 1))
     score = masked_instance.mean()
     im_h, im_w = mask_pred.shape
@@ -171,7 +172,8 @@ def get_poly_crowdai(prop, mask_pred, junctions):
 
 def get_poly_inria(prop, mask_pred, junctions, pid):
     prop_mask = np.zeros_like(mask_pred).astype(np.uint8)
-    prop_mask[prop.coords[:, 0], prop.coords[:, 1]] = 1
+    coords = prop.coords
+    prop_mask[coords[:, 0].astype(int), coords[:, 1].astype(int)] = 1
     masked_instance = np.ma.masked_array(mask_pred, mask=(prop_mask != 1))
     score = masked_instance.mean()
     contours, hierarchy = cv2.findContours(prop_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
