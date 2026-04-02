@@ -55,7 +55,7 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
 
 def ext_c_to_poly_coco(ext_c, im_h, im_w):
     mask = np.zeros([im_h+1, im_w+1], dtype=np.uint8)
-    polygon = np.int0(ext_c)
+    polygon = np.asarray(ext_c, dtype=np.int32)
     cv2.drawContours(mask, [polygon.reshape(-1, 1, 2)], -1, color=1, thickness=-1)
     trans_prop_mask = mask.copy()
     f_y, f_x = np.where(mask == 1)
