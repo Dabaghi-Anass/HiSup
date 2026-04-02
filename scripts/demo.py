@@ -47,7 +47,38 @@ def parse_args():
 #     else:
 #         print('No building polygons.')
 
-def inference_no_patching(cfg, model, image, device):
+# def inference_no_patching(cfg, model, image, device):
+#     transform = build_transform(cfg)
+#     # Ensure image is in the right format for the transform
+#     image_tensor = transform(image.astype(np.float32))[None].to(device)
+    
+#     meta = {
+#         'height': image.shape[0],
+#         'width': image.shape[1],
+#     }
+
+#     with torch.no_grad():
+#         output, _ = model(image_tensor, [meta])
+#         # Move output to CPU for visualization
+#         output = to_single_device(output, 'cpu')
+
+#     if len(output['polys_pred']) > 0:
+#         # polys_pred[0] contains the rescaled polygons for the first image in batch
+#         polygons = output['polys_pred'][0]
+#         show_polygons(image, polygons)
+#     else:
+#         print('No polygons detected.')
+
+import json
+import os
+import torch
+import numpy as np
+import cv2
+
+def inference_no_patching(cfg, model, image, device, output_dir=None, file_prefix="result"):
+    """
+    Runs inference, visualizes results, and saves image/GeoJSON assets.
+    """
     transform = build_transform(cfg)
     # Ensure image is in the right format for the transform
     image_tensor = transform(image.astype(np.float32))[None].to(device)
@@ -59,16 +90,57 @@ def inference_no_patching(cfg, model, image, device):
 
     with torch.no_grad():
         output, _ = model(image_tensor, [meta])
-        # Move output to CPU for visualization
         output = to_single_device(output, 'cpu')
 
     if len(output['polys_pred']) > 0:
-        # polys_pred[0] contains the rescaled polygons for the first image in batch
         polygons = output['polys_pred'][0]
+        
+        # 1. Visualization (Pop-up)
         show_polygons(image, polygons)
+        
+        # 2. Saving Assets (If output_dir is provided)
+        if output_dir:
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            # Save Image (Convert RGB to BGR for OpenCV)
+            save_img_path = os.path.join(output_dir, f"{file_prefix}.png")
+            cv2.imwrite(save_img_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+
+            # Construct GeoJSON
+            features = []
+            for i, poly in enumerate(polygons):
+                coords = poly.tolist()
+                # Close the polygon loop for GeoJSON spec
+                if coords[0] != coords[-1]:
+                    coords.append(coords[0])
+                
+                features.append({
+                    "type": "Feature",
+                    "id": i,
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [coords]
+                    },
+                    "properties": { "instance_id": i }
+                })
+
+            geojson_data = {
+                "type": "FeatureCollection",
+                "features": features
+            }
+
+            # Save GeoJSON
+            geojson_path = os.path.join(output_dir, f"{file_prefix}.geojson")
+            with open(geojson_path, 'w') as f:
+                json.dump(geojson_data, f, indent=4)
+                
+            print(f"Success: Saved assets to {output_dir}")
+            
     else:
         print('No polygons detected.')
 
+        
 def inference_with_patching(cfg, model, image, device):
     import scipy.ndimage
     from tqdm import tqdm
