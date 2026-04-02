@@ -94,7 +94,7 @@ def diagonal_to_square(poly):
 
 def inn_c_to_poly_coco(inn_c, im_h, im_w):
     mask = np.zeros([im_h + 1, im_w + 1], dtype=np.uint8)
-    polygon = np.int0(inn_c)
+    polygon = np.asarray(inn_c, dtype=np.int32)
     cv2.drawContours(mask, [polygon.reshape(-1, 1, 2)], -1, color=1, thickness=-1)
     trans_prop_mask = mask.copy()
     f_y, f_x = np.where(mask == 1)
