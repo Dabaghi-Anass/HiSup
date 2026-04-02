@@ -29,9 +29,29 @@ def parse_args():
 
     return args
 
+# def inference_no_patching(cfg, model, image, device):
+#     transform = build_transform(cfg)
+#     image_tensor = transform(image.astype(float))[None].to(device)
+#     meta = {
+#         'height': image.shape[0],
+#         'width': image.shape[1],
+#     }
+
+#     with torch.no_grad():
+#         output, _ = model(image_tensor, [meta])
+#         output = to_single_device(output, 'cpu')
+
+#     if len(output['polys_pred']) > 0:
+#         polygons = output['polys_pred'][0]
+#         show_polygons(image, polygons)
+#     else:
+#         print('No building polygons.')
+
 def inference_no_patching(cfg, model, image, device):
     transform = build_transform(cfg)
-    image_tensor = transform(image.astype(float))[None].to(device)
+    # Ensure image is in the right format for the transform
+    image_tensor = transform(image.astype(np.float32))[None].to(device)
+    
     meta = {
         'height': image.shape[0],
         'width': image.shape[1],
@@ -39,13 +59,15 @@ def inference_no_patching(cfg, model, image, device):
 
     with torch.no_grad():
         output, _ = model(image_tensor, [meta])
+        # Move output to CPU for visualization
         output = to_single_device(output, 'cpu')
 
     if len(output['polys_pred']) > 0:
+        # polys_pred[0] contains the rescaled polygons for the first image in batch
         polygons = output['polys_pred'][0]
         show_polygons(image, polygons)
     else:
-        print('No building polygons.')
+        print('No polygons detected.')
 
 def inference_with_patching(cfg, model, image, device):
     import scipy.ndimage

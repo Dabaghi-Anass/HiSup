@@ -29,15 +29,47 @@ colormap = (
 num_color = len(colormap)
 
 
-def show_polygons(image, polys):
-    plt.axis('off')
-    plt.imshow(image)
+# def show_polygons(image, polys):
+#     plt.axis('off')
+#     plt.imshow(image)
+
+#     for i, polygon in enumerate(polys):
+#         color = colormap[i % num_color]
+#         plt.gca().add_patch(Patches.Polygon(polygon, fill=False, ec=color, linewidth=1.5))
+#         plt.fill(polygon[:,0], polygon[:, 1], color=color, alpha=0.3)
+#         plt.plot(polygon[:,0], polygon[:,1], color=color, marker='.')
+    
+#     plt.show()
+
+def show_polygons(image, polys, dpi=100):
+    height, width = image.shape[:2]
+    
+    # Calculate figure size in inches to match image dimensions
+    fig = plt.figure(figsize=(width / dpi, height / dpi), dpi=dpi)
+    
+    # Add an axis that fills the entire figure (no margins)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('off')
+    
+    # Display the image
+    ax.imshow(image, interpolation='nearest')
 
     for i, polygon in enumerate(polys):
         color = colormap[i % num_color]
-        plt.gca().add_patch(Patches.Polygon(polygon, fill=False, ec=color, linewidth=1.5))
-        plt.fill(polygon[:,0], polygon[:, 1], color=color, alpha=0.3)
-        plt.plot(polygon[:,0], polygon[:,1], color=color, marker='.')
+        
+        # Overlay the polygon patch
+        # Note: HiSup returns (x, y), which matches Matplotlib's expectation
+        poly_patch = Patches.Polygon(polygon, fill=True, facecolor=color, 
+                                     edgecolor=color, linewidth=2, alpha=0.3)
+        ax.add_patch(poly_patch)
+        
+        # Optional: Add boundary points for better visibility
+        ax.plot(polygon[:, 0], polygon[:, 1], color=color, marker='.', 
+                markersize=4, linestyle='none')
+    
+    # Ensure the axis limits match the image exactly
+    ax.set_xlim(0, width)
+    ax.set_ylim(height, 0) # Flipped for image coordinates
     
     plt.show()
 
